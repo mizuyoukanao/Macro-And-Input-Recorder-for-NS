@@ -1,0 +1,40 @@
+{
+  "Name": "dash_and_spin",
+  "FrameIntervalMs": 8,
+  "Steps": [
+    {
+      "Frames": 30,
+      "Buttons": "A",
+      "LeftStick": {
+        "X": 1800,
+        "Y": 0
+      },
+      "RightStick": {
+        "X": 0,
+        "Y": 0
+      },
+      "Gyro": {
+        "Roll": 0,
+        "Pitch": 0,
+        "Yaw": 0
+      }
+    },
+    {
+      "Frames": 60,
+      "Buttons": "A,Right",
+      "LeftStick": {
+        "X": 2047,
+        "Y": 0
+      },
+      "RightStick": {
+        "X": 0,
+        "Y": 0
+      },
+      "Gyro": {
+        "Roll": 1200,
+        "Pitch": 0,
+        "Yaw": 0
+      }
+    }
+  ]
+}
