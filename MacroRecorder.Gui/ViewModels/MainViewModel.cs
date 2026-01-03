@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.IO;
 using Microsoft.Win32;
 using MacroRecorder.Configuration;
 using MacroRecorder.Models;
