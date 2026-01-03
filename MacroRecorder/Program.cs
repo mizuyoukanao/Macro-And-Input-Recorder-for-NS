@@ -3,24 +3,24 @@ using MacroRecorder.Models;
 using MacroRecorder.Serialization;
 using MacroRecorder.Services;
 
-var argsSpan = args.AsSpan();
+var argsMem = args.AsMemory();
 
-if (argsSpan.Length == 0)
+if (argsMem.Length == 0)
 {
     ShowHelp();
     return;
 }
 
-switch (argsSpan[0].ToLowerInvariant())
+switch (argsMem.Span[0].ToLowerInvariant())
 {
     case "record":
-        await RunRecorderAsync(argsSpan[1..]);
+        await RunRecorderAsync(argsMem.Slice(1));
         break;
     case "replay":
-        await RunReplayAsync(argsSpan[1..]);
+        await RunReplayAsync(argsMem.Slice(1));
         break;
     case "macro":
-        await RunMacroAsync(argsSpan[1..]);
+        await RunMacroAsync(argsMem.Slice(1));
         break;
     case "help":
     default:
@@ -42,9 +42,9 @@ static void ShowHelp()
     Console.WriteLine("  dotnet run -- macro --port COM6 --baud 2000000 --config sample_macro.json");
 }
 
-static async Task RunRecorderAsync(ReadOnlySpan<string> span)
+static async Task RunRecorderAsync(ReadOnlyMemory<string> argsMem)
 {
-    var options = RecorderOptions.FromArgs(span.ToArray());
+    var options = RecorderOptions.FromArgs(argsMem.ToArray());
     var recorder = new UsbSnifferRecorder(options);
 
     Console.WriteLine($"Recording {options.Seconds} seconds from {options.PortName}...");
@@ -53,25 +53,27 @@ static async Task RunRecorderAsync(ReadOnlySpan<string> span)
     Console.WriteLine($"Saved {session.Frames.Count} frames to {options.OutputPath}");
 }
 
-static async Task RunReplayAsync(ReadOnlySpan<string> span)
+static async Task RunReplayAsync(ReadOnlyMemory<string> argsMem)
 {
-    var options = ReplayOptions.FromArgs(span.ToArray());
+    var options = ReplayOptions.FromArgs(argsMem.ToArray());
     var session = BinaryCaptureWriter.Read(options.InputPath);
     var sender = new SwitchSerialSender(options.PortName, options.BaudRate);
     var playback = new PacketPlayback(sender, session);
+
     Console.WriteLine($"Replaying {session.Frames.Count} frames to {options.PortName} (loop: {options.Loop})");
     await playback.PlayAsync(options.Loop);
     Console.WriteLine("Replay finished.");
 }
 
-static async Task RunMacroAsync(ReadOnlySpan<string> span)
+static async Task RunMacroAsync(ReadOnlyMemory<string> argsMem)
 {
-    var options = MacroOptions.FromArgs(span.ToArray());
+    var options = MacroOptions.FromArgs(argsMem.ToArray());
     var macro = MacroSerializer.Read(options.ConfigPath);
     var sender = new SwitchSerialSender(options.PortName, options.BaudRate);
     var generator = new MacroGenerator();
     var frames = generator.BuildFrames(macro);
     var playback = new PacketPlayback(sender, new CaptureSession(frames));
+
     Console.WriteLine($"Sending macro '{macro.Name}' with {frames.Count} frames...");
     await playback.PlayAsync(false);
     Console.WriteLine("Macro sent.");
