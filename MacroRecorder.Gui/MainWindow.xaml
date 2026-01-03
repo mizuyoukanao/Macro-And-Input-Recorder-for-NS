@@ -1,0 +1,99 @@
+<Window x:Class="MacroRecorder.Gui.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Macro & Input Recorder for Nintendo Switch" Height="720" Width="1080">
+    <Grid>
+        <TabControl>
+            <TabItem Header="キャプチャ">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Margin="10">
+                        <TextBlock Text="USBスニファからProコンの通信を取得します。Start capture(s)実行後、Display current buffer(b)をポーリングします。" TextWrapping="Wrap" Margin="0 0 0 8"/>
+                        <WrapPanel Margin="0 0 0 8" VerticalAlignment="Center">
+                            <StackPanel Margin="0 0 12 0">
+                                <TextBlock Text="ポート名"/>
+                                <TextBox Width="120" Text="{Binding CapturePortName, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0 0 12 0">
+                                <TextBlock Text="ボーレート"/>
+                                <TextBox Width="120" Text="{Binding CaptureBaudRate, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0 0 12 0">
+                                <TextBlock Text="記録秒数"/>
+                                <TextBox Width="80" Text="{Binding CaptureSeconds, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0 0 12 0">
+                                <TextBlock Text="ポーリング(ms)"/>
+                                <TextBox Width="80" Text="{Binding CapturePollIntervalMs, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <Button Content="記録開始" Width="120" Margin="0 0 8 0" Command="{Binding CaptureCommand}"/>
+                            <Button Content="capture.bin読込" Width="140" Command="{Binding LoadCaptureCommand}"/>
+                        </WrapPanel>
+                        <TextBlock Text="{Binding CaptureStatus}" FontWeight="Bold"/>
+                    </StackPanel>
+                    <DataGrid ItemsSource="{Binding CapturedFrames}" DockPanel.Dock="Bottom" AutoGenerateColumns="False" Margin="10" IsReadOnly="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Time(ms)" Binding="{Binding TimestampMs}" Width="80"/>
+                            <DataGridTextColumn Header="Buttons" Binding="{Binding Buttons}" Width="220"/>
+                            <DataGridTextColumn Header="Left Stick" Binding="{Binding LeftStick}" Width="140"/>
+                            <DataGridTextColumn Header="Right Stick" Binding="{Binding RightStick}" Width="140"/>
+                            <DataGridTextColumn Header="Gyro" Binding="{Binding Gyro}" Width="200"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="マクロ編集">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Margin="10">
+                        <TextBlock Text="ボタン・スティック・ジャイロをフレーム単位で編集できます。キャプチャ結果からまとめて生成も可能です。" TextWrapping="Wrap" Margin="0 0 0 8"/>
+                        <WrapPanel Margin="0 0 0 8">
+                            <StackPanel Margin="0 12 12 0">
+                                <TextBlock Text="マクロ名"/>
+                                <TextBox Width="200" Text="{Binding MacroName, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0 12 12 0">
+                                <TextBlock Text="フレーム間隔(ms)"/>
+                                <TextBox Width="120" Text="{Binding MacroFrameInterval, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <Button Content="ステップ追加" Width="120" Margin="0 0 8 0" Command="{Binding AddStepCommand}"/>
+                            <Button Content="マクロ読込" Width="120" Margin="0 0 8 0" Command="{Binding LoadMacroCommand}"/>
+                            <Button Content="マクロ保存" Width="120" Margin="0 0 8 0" Command="{Binding SaveMacroCommand}"/>
+                            <Button Content="キャプチャから生成" Width="150" Command="{Binding BuildMacroFromCaptureCommand}"/>
+                        </WrapPanel>
+                        <TextBlock Text="{Binding MacroStatus}"/>
+                    </StackPanel>
+                    <DataGrid ItemsSource="{Binding MacroSteps}" AutoGenerateColumns="False" DockPanel.Dock="Bottom" Margin="10" IsReadOnly="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Frames" Binding="{Binding Frames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="60"/>
+                            <DataGridTextColumn Header="Buttons (comma)" Binding="{Binding ButtonsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+                            <DataGridTextColumn Header="LX" Binding="{Binding LeftX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                            <DataGridTextColumn Header="LY" Binding="{Binding LeftY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                            <DataGridTextColumn Header="RX" Binding="{Binding RightX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                            <DataGridTextColumn Header="RY" Binding="{Binding RightY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                            <DataGridTextColumn Header="Roll" Binding="{Binding Roll, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
+                            <DataGridTextColumn Header="Pitch" Binding="{Binding Pitch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
+                            <DataGridTextColumn Header="Yaw" Binding="{Binding Yaw, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="Switch送信">
+                <StackPanel Margin="10">
+                    <TextBlock Text="マクロまたはキャプチャをUARTControllerNX拡張フレームでSwitchへ送信します。" TextWrapping="Wrap" Margin="0 0 0 8"/>
+                    <WrapPanel Margin="0 0 0 8">
+                        <StackPanel Margin="0 0 12 0">
+                            <TextBlock Text="ポート名"/>
+                            <TextBox Width="120" Text="{Binding SendPortName, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <StackPanel Margin="0 0 12 0">
+                            <TextBlock Text="ボーレート"/>
+                            <TextBox Width="120" Text="{Binding SendBaudRate, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+                        <Button Content="マクロ送信" Width="120" Margin="0 0 8 0" Command="{Binding SendMacroCommand}"/>
+                        <Button Content="キャプチャ送信" Width="140" Command="{Binding SendCaptureCommand}"/>
+                    </WrapPanel>
+                    <TextBlock Text="{Binding SendStatus}"/>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>
