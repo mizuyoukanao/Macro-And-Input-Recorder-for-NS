@@ -19,6 +19,9 @@ public sealed class UsbSnifferRecorder
         var frames = new List<ControllerFrame>();
         using var port = new SerialPort(_options.PortName, _options.BaudRate)
         {
+            WriteTimeout = 1000,
+            RtsEnable = true,
+            DtrEnable = true,
             ReadTimeout = _options.PollIntervalMs,
             NewLine = "\n"
         };
