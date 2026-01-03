@@ -14,13 +14,13 @@ public sealed class MacroOptions
             switch (args[i])
             {
                 case "--port":
-                    options = options with { PortName = args[++i] };
+                    options = new MacroOptions { PortName = args[++i] };
                     break;
                 case "--baud":
-                    options = options with { BaudRate = int.Parse(args[++i]) };
+                    options = new MacroOptions { BaudRate = int.Parse(args[++i]) };
                     break;
                 case "--config":
-                    options = options with { ConfigPath = args[++i] };
+                    options = new MacroOptions { ConfigPath = args[++i] };
                     break;
             }
         }

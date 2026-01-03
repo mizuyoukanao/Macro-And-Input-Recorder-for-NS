@@ -16,19 +16,19 @@ public sealed class RecorderOptions
             switch (args[i])
             {
                 case "--port":
-                    options = options with { PortName = args[++i] };
+                    options = new RecorderOptions { PortName = args[++i] };
                     break;
                 case "--baud":
-                    options = options with { BaudRate = int.Parse(args[++i]) };
+                    options = new RecorderOptions { BaudRate = int.Parse(args[++i]) };
                     break;
                 case "--seconds":
-                    options = options with { Seconds = int.Parse(args[++i]) };
+                    options = new RecorderOptions { Seconds = int.Parse(args[++i]) };
                     break;
                 case "--poll":
-                    options = options with { PollIntervalMs = int.Parse(args[++i]) };
+                    options = new RecorderOptions { PollIntervalMs = int.Parse(args[++i]) };
                     break;
                 case "--output":
-                    options = options with { OutputPath = args[++i] };
+                    options = new RecorderOptions { OutputPath = args[++i] };
                     break;
             }
         }

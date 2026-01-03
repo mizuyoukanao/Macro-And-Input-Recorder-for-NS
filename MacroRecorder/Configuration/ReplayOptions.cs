@@ -15,16 +15,16 @@ public sealed class ReplayOptions
             switch (args[i])
             {
                 case "--port":
-                    options = options with { PortName = args[++i] };
+                    options = new ReplayOptions { PortName = args[++i] };
                     break;
                 case "--baud":
-                    options = options with { BaudRate = int.Parse(args[++i]) };
+                    options = new ReplayOptions { BaudRate = int.Parse(args[++i]) };
                     break;
                 case "--input":
-                    options = options with { InputPath = args[++i] };
+                    options = new ReplayOptions { InputPath = args[++i] };
                     break;
                 case "--loop":
-                    options = options with { Loop = true };
+                    options = new ReplayOptions { Loop = true };
                     break;
             }
         }
