@@ -12,7 +12,7 @@ public sealed record ControllerFrame(
         // HID report layout derived from dekuNukem Nintendo Switchプロトコル
         var report = new byte[18];
         report[0] = 0x30; // standard input report id
-        report[1] = (byte)(Buttons & 0xFF);
+        report[1] = (byte)((int)Buttons & 0xFF);
         report[2] = (byte)((int)Buttons >> 8);
         report[3] = (byte)((int)Buttons >> 16);
         InsertStick(report, 4, LeftStick);
