@@ -23,21 +23,17 @@ public sealed class UsbSnifferRecorder
             RtsEnable = true,
             DtrEnable = true,
             ReadTimeout = _options.PollIntervalMs,
-            NewLine = "\n"
+            NewLine = "\n",
         };
 
-        port.Open();
-        port.Write("s\n");
         var start = DateTime.UtcNow;
+        var sync = new object();
 
-        while ((DateTime.UtcNow - start).TotalSeconds < _options.Seconds)
+        SerialDataReceivedEventHandler handler = (_, _) =>
         {
-            port.Write("b\n");
-            await Task.Delay(_options.PollIntervalMs);
-
-            while (port.BytesToRead > 0)
+            try
             {
-                try
+                while (port.BytesToRead > 0)
                 {
                     var line = port.ReadLine().Trim();
                     if (string.IsNullOrWhiteSpace(line))
@@ -47,21 +43,42 @@ public sealed class UsbSnifferRecorder
 
                     var packet = ProControllerPacket.FromHexLine(line);
                     var timestamp = DateTime.UtcNow - start;
-                    frames.Add(packet.ToFrame(timestamp));
-                }
-                catch (TimeoutException)
-                {
-                    break;
-                }
-                catch (FormatException)
-                {
-                    // ignore malformed line
-                }
-                catch (InvalidOperationException)
-                {
-                    // ignore malformed packet
+
+                    lock (sync)
+                    {
+                        frames.Add(packet.ToFrame(timestamp));
+                    }
                 }
             }
+            catch (TimeoutException)
+            {
+                // ignore
+            }
+            catch (FormatException)
+            {
+                // ignore malformed line
+            }
+            catch (InvalidOperationException)
+            {
+                // ignore malformed packet
+            }
+        };
+
+        port.Open();
+        port.DataReceived += handler;
+        port.Write("s\n");
+
+        try
+        {
+            while ((DateTime.UtcNow - start).TotalSeconds < _options.Seconds)
+            {
+                port.Write("b\n");
+                await Task.Delay(_options.PollIntervalMs);
+            }
+        }
+        finally
+        {
+            port.DataReceived -= handler;
         }
 
         return new CaptureSession(frames);
