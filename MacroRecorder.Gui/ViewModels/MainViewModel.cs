@@ -12,16 +12,16 @@ namespace MacroRecorder.Gui.ViewModels;
 
 public sealed class MainViewModel : INotifyPropertyChanged
 {
-    private string _capturePortName = "COM3";
-    private int _captureBaudRate = 12000000;
+    private string _capturePortName = "COM16";
+    private int _captureBaudRate = 115200;
     private int _captureSeconds = 5;
     private int _capturePollIntervalMs = 50;
     private string _captureStatus = "待機中";
     private string _macroName = "macro";
     private int _macroFrameInterval = 8;
     private string _macroStatus = "";
-    private string _sendPortName = "COM6";
-    private int _sendBaudRate = 2000000;
+    private string _sendPortName = "COM3";
+    private int _sendBaudRate = 9600;
     private string _sendStatus = "Switch未接続";
     private CaptureSession? _currentCapture;
 

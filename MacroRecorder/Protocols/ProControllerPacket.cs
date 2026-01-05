@@ -6,9 +6,7 @@ public readonly record struct ProControllerPacket(byte[] Raw)
 {
     public static ProControllerPacket FromHexLine(string line)
     {
-        var bytes = line.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .Select(b => Convert.ToByte(b, 16))
-            .ToArray();
+        var bytes = Convert.FromHexString(line);
         return new ProControllerPacket(bytes);
     }
 
@@ -19,17 +17,17 @@ public readonly record struct ProControllerPacket(byte[] Raw)
             throw new InvalidOperationException("Packet too short to decode");
         }
 
-        var buttons = (ButtonState)(Raw[1] | (Raw[2] << 8) | (Raw[3] << 16));
-        var left = DecodeStick(Raw.AsSpan(4));
-        var right = DecodeStick(Raw.AsSpan(8));
-        var gyro = DecodeGyro(Raw.AsSpan(12));
+        var buttons = (ButtonState)(Raw[3] | (Raw[4] << 8) | (Raw[5] << 16));
+        var left = DecodeStick(Raw.AsSpan(6));
+        var right = DecodeStick(Raw.AsSpan(9));
+        var gyro = DecodeGyro(Raw.AsSpan(13));
         return new ControllerFrame(timestamp, buttons, left, right, gyro);
     }
 
     private static AnalogStickState DecodeStick(ReadOnlySpan<byte> buffer)
     {
-        var x = (short)(((buffer[1] << 8) | buffer[0]) - 2048);
-        var y = (short)(((buffer[3] << 8) | buffer[2]) - 2048);
+        var x = (short)(buffer[0] | ((buffer[1] & 0x0F) << 8));
+        var y = (short)((buffer[1] >> 4) | (buffer[2] << 4));
         return new AnalogStickState(x, y).Clamp();
     }
 
