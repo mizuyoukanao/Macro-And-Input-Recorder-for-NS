@@ -17,30 +17,31 @@ public sealed class CaptureMacroBuilder
             return macro;
         }
 
-        ControllerFrame? previous = null;
-        MacroStep? currentStep = null;
+        var orderedFrames = session.Frames.OrderBy(f => f.Timestamp).ToList();
+        var currentStep = CreateStep(orderedFrames[0]);
 
-        foreach (var frame in session.Frames.OrderBy(f => f.Timestamp))
+        for (var i = 1; i < orderedFrames.Count; i++)
         {
-            if (previous is not null && AreSameState(previous, frame) && currentStep is not null)
+            var previous = orderedFrames[i - 1];
+            var current = orderedFrames[i];
+            var framesForPrevious = CalculateFramesForInterval(previous.Timestamp, current.Timestamp, macro.FrameIntervalMs);
+
+            if (AreSameState(previous, current))
             {
-                currentStep.Frames++;
-            }
-            else
-            {
-                currentStep = new MacroStep
-                {
-                    Frames = 1,
-                    Buttons = frame.Buttons,
-                    LeftStick = frame.LeftStick,
-                    RightStick = frame.RightStick,
-                    Gyro = frame.Gyro
-                };
-                macro.Steps.Add(currentStep);
+                currentStep.Frames += framesForPrevious;
+                continue;
             }
 
-            previous = frame;
+            currentStep.Frames += framesForPrevious;
+            macro.Steps.Add(currentStep);
+            currentStep = CreateStep(current);
         }
+
+        if (currentStep.Frames == 0)
+        {
+            currentStep.Frames = 1;
+        }
+        macro.Steps.Add(currentStep);
 
         return macro;
     }
@@ -69,5 +70,28 @@ public sealed class CaptureMacroBuilder
 
         var average = deltas.Average();
         return Math.Max(1, (int)Math.Round(average));
+    }
+
+    private static MacroStep CreateStep(ControllerFrame frame)
+    {
+        return new MacroStep
+        {
+            Frames = 0,
+            Buttons = frame.Buttons,
+            LeftStick = frame.LeftStick,
+            RightStick = frame.RightStick,
+            Gyro = frame.Gyro
+        };
+    }
+
+    private static int CalculateFramesForInterval(TimeSpan previous, TimeSpan current, int intervalMs)
+    {
+        if (intervalMs <= 0)
+        {
+            return 1;
+        }
+
+        var deltaMs = (current - previous).TotalMilliseconds;
+        return Math.Max(1, (int)Math.Round(deltaMs / intervalMs));
     }
 }
