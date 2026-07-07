@@ -32,9 +32,9 @@ static void ShowHelp()
 {
     Console.WriteLine("Macro Recorder for Nintendo Switch Pro Controller");
     Console.WriteLine("Commands:");
-    Console.WriteLine("  record --port <port> --baud <baud> --seconds <seconds> [--poll <ms>] --output <file>");
-    Console.WriteLine("  replay --port <port> --baud <baud> --input <file> [--loop]");
-    Console.WriteLine("  macro --port <port> --baud <baud> --config <macro.json>");
+    Console.WriteLine("  record --port <port> --baud <baud> --seconds <seconds> [--poll <ms>] --output <file> [--motion raw|quaternion]");
+    Console.WriteLine("  replay --port <port> --baud <baud> --input <file> [--loop] [--motion raw|quaternion]");
+    Console.WriteLine("  macro --port <port> --baud <baud> --config <macro.json> [--motion raw|quaternion]");
     Console.WriteLine();
     Console.WriteLine("Examples:");
     Console.WriteLine("  dotnet run -- record --port COM5 --baud 12000000 --seconds 10 --output capture.bin");
@@ -47,7 +47,7 @@ static async Task RunRecorderAsync(ReadOnlyMemory<string> argsMem)
     var options = RecorderOptions.FromArgs(argsMem.ToArray());
     var recorder = new UsbSnifferRecorder(options);
 
-    Console.WriteLine($"Recording {options.Seconds} seconds from {options.PortName}...");
+    Console.WriteLine($"Recording {options.Seconds} seconds from {options.PortName} (motion: {options.MotionEncoding})...");
     var session = await recorder.RecordAsync();
     BinaryCaptureWriter.Write(options.OutputPath, session);
     Console.WriteLine($"Saved {session.Frames.Count} frames to {options.OutputPath}");
@@ -58,9 +58,9 @@ static async Task RunReplayAsync(ReadOnlyMemory<string> argsMem)
     var options = ReplayOptions.FromArgs(argsMem.ToArray());
     var session = BinaryCaptureWriter.Read(options.InputPath);
     var sender = new SwitchSerialSender(options.PortName, options.BaudRate);
-    var playback = new PacketPlayback(sender, session);
+    var playback = new PacketPlayback(sender, session, options.MotionEncoding);
 
-    Console.WriteLine($"Replaying {session.Frames.Count} frames to {options.PortName} (loop: {options.Loop})");
+    Console.WriteLine($"Replaying {session.Frames.Count} frames to {options.PortName} (loop: {options.Loop}, motion: {options.MotionEncoding})");
     await playback.PlayAsync(options.Loop);
     Console.WriteLine("Replay finished.");
 }
@@ -72,9 +72,9 @@ static async Task RunMacroAsync(ReadOnlyMemory<string> argsMem)
     var sender = new SwitchSerialSender(options.PortName, options.BaudRate);
     var generator = new MacroGenerator();
     var frames = generator.BuildFrames(macro);
-    var playback = new PacketPlayback(sender, new CaptureSession(frames));
+    var playback = new PacketPlayback(sender, new CaptureSession(frames), options.MotionEncoding);
 
-    Console.WriteLine($"Sending macro '{macro.Name}' with {frames.Count} frames...");
+    Console.WriteLine($"Sending macro '{macro.Name}' with {frames.Count} frames (motion: {options.MotionEncoding})...");
     await playback.PlayAsync(false);
     Console.WriteLine("Macro sent.");
 }

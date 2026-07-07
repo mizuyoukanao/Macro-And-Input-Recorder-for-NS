@@ -10,6 +10,7 @@ Nintendo Switch ProコントローラーのUSBスニファ経由バイト列を�
 
 ## 機能
 - USBスニファから読み取ったProコンのHIDレポートを時刻付きで記録
+- モーションデータは従来の16bitジャイロ値そのまま方式と、joycon-quatを参考にしたクォータニオン方式を`--motion raw|quaternion`または`--quat`で切り替え
 - 記録したバイト列をシリアル通信(UARTControllerNX互換フレーム)でSwitchへ再生
 - JSONマクロからボタン・スティック・ジャイロをフレーム単位で合成して送信
 - `sample_macro.json`を同梱。ボタンや角速度を編集してすぐ試せます
@@ -33,19 +34,19 @@ cd Macro-And-Input-Recorder-for-NS
 USBスニファのシリアルポートとボーレートを指定して、指定秒数分のHIDレポートを`capture.bin`に保存します。開始時に`s`を送り、`--poll`で指定した間隔(デフォルト50ms)ごとに`b`を投げてバッファ表示を取得します。
 ```bash
 # 例: 12MHzロジックアナライザ出力をCOM5で10秒記録
-# dotnet run --project MacroRecorder -- record --port COM5 --baud 12000000 --seconds 10 --poll 50 --output capture.bin
+# dotnet run --project MacroRecorder -- record --port COM5 --baud 12000000 --seconds 10 --poll 50 --output capture.bin --motion quaternion
 ```
 
 ### 再生
 保存した`capture.bin`をSwitchに入力します。`--loop`でループ再生。
 ```bash
-# dotnet run --project MacroRecorder -- replay --port /dev/ttyUSB1 --baud 2000000 --input capture.bin --loop
+# dotnet run --project MacroRecorder -- replay --port /dev/ttyUSB1 --baud 2000000 --input capture.bin --loop --motion quaternion
 ```
 
 ### マクロ送信
 `sample_macro.json`をテンプレートに、ボタン(列挙値)やスティック(-2048〜2047)、ジャイロ角度(度単位を内部で16bitスケール)を設定して送信します。
 ```bash
-# dotnet run --project MacroRecorder -- macro --port COM6 --baud 2000000 --config MacroRecorder/sample_macro.json
+# dotnet run --project MacroRecorder -- macro --port COM6 --baud 2000000 --config MacroRecorder/sample_macro.json --motion quaternion
 ```
 
 ## マクロJSONの項目
@@ -55,7 +56,7 @@ USBスニファのシリアルポートとボーレートを指定して、指�
   - `Frames`: 繰り返すフレーム数
   - `Buttons`: `A,B,X,Y,L,R,ZL,ZR,Plus,Minus,Home,Capture,Up,Down,Left,Right,LStick,RStick`のカンマ区切り
   - `LeftStick` / `RightStick`: `X` / `Y` は-2048〜2047で中心0
-  - `Gyro`: `Roll`/`Pitch`/`Yaw` は16bitスケール済みの角速度。度で指定したい場合はコード中の`GyroState.FromDegrees`を利用してください。
+  - `Gyro`: `Roll`/`Pitch`/`Yaw` は16bitスケール済みの角速度。度で指定したい場合はコード中の`GyroState.FromDegrees`を利用してください。`--motion quaternion`指定時は送信直前にクォータニオンへエンコードされます。
 
 ## ファイル構成
 - `MacroAndInputRecorder.sln`: Visual Studio用ソリューション
@@ -69,5 +70,6 @@ USBスニファのシリアルポートとボーレートを指定して、指�
 
 ## 注意
 - 実機接続時はUSBスニファとSwitch UARTアダプタのボーレートを合わせてください。
-- 実際のジャイロ変換係数は環境に応じて調整が必要です。`GyroState.FromDegrees`内のスケール値を変更して合わせてください。
+- 実際のジャイロ変換係数は環境に応じて調整が必要です。`GyroState.DegreesScale`を変更して合わせてください。
+- クォータニオン方式は8バイトの`x,y,z,w` little-endian signed 16bit / 16384スケールを想定します。従来の6バイトジャイロ値を扱う場合はデフォルトの`--motion raw`を使ってください。
 - UARTControllerNX拡張フレームのバイト0〜4は0xAA固定です。本実装はこのヘッダーを付けてから長さ・ペイロード・チェックサムを送ります。
