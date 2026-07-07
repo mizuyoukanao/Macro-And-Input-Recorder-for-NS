@@ -1,3 +1,6 @@
+using MacroRecorder.Configuration;
+using MacroRecorder.Services;
+
 namespace MacroRecorder.Models;
 
 public sealed record ControllerFrame(
@@ -7,17 +10,17 @@ public sealed record ControllerFrame(
     AnalogStickState RightStick,
     GyroState Gyro)
 {
-    public byte[] ToHidReport()
+    public byte[] ToHidReport(MotionEncoding motionEncoding = MotionEncoding.RawGyro)
     {
         // HID report layout derived from dekuNukem Nintendo Switchプロトコル
-        var report = new byte[18];
+        var report = new byte[motionEncoding == MotionEncoding.Quaternion ? 20 : 18];
         report[0] = 0x30; // standard input report id
         report[1] = (byte)((int)Buttons & 0xFF);
         report[2] = (byte)((int)Buttons >> 8);
         report[3] = (byte)((int)Buttons >> 16);
         InsertStick(report, 4, LeftStick);
         InsertStick(report, 8, RightStick);
-        InsertGyro(report, 12, Gyro);
+        InsertMotion(report, 12, Gyro, motionEncoding);
         return report;
     }
 
@@ -30,6 +33,17 @@ public sealed record ControllerFrame(
         buffer[offset + 1] = (byte)(x >> 8);
         buffer[offset + 2] = (byte)(y & 0xFF);
         buffer[offset + 3] = (byte)(y >> 8);
+    }
+
+    private static void InsertMotion(byte[] buffer, int offset, GyroState gyro, MotionEncoding motionEncoding)
+    {
+        if (motionEncoding == MotionEncoding.Quaternion)
+        {
+            JoyconQuaternionCodec.Encode(buffer.AsSpan(offset, 8), gyro);
+            return;
+        }
+
+        InsertGyro(buffer, offset, gyro);
     }
 
     private static void InsertGyro(byte[] buffer, int offset, GyroState gyro)

@@ -55,7 +55,7 @@ public sealed class UsbSnifferRecorder
 
                         lock (sync)
                         {
-                            frames.Add(packet.ToFrame(timestamp));
+                            frames.Add(packet.ToFrame(timestamp, _options.MotionEncoding));
                         }
                     }
                 }
