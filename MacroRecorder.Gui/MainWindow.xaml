@@ -1,6 +1,7 @@
 <Window x:Class="MacroRecorder.Gui.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:MacroRecorder.Gui.Controls"
         Title="Macro and Input Recorder for Nintendo Switch" Height="720" Width="1080">
     <Grid>
         <TabControl>
@@ -55,25 +56,49 @@
                                 <TextBox Width="120" Text="{Binding MacroFrameInterval, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                             <Button Content="ステップ追加" Width="120" Margin="0 0 8 0" Command="{Binding AddStepCommand}"/>
+                            <Button Content="1F分解" Width="100" Margin="0 0 8 0" Command="{Binding NormalizeMacroFramesCommand}"/>
                             <Button Content="マクロ読込" Width="120" Margin="0 0 8 0" Command="{Binding LoadMacroCommand}"/>
                             <Button Content="マクロ保存" Width="120" Margin="0 0 8 0" Command="{Binding SaveMacroCommand}"/>
                             <Button Content="キャプチャから生成" Width="150" Command="{Binding BuildMacroFromCaptureCommand}"/>
                         </WrapPanel>
                         <TextBlock Text="{Binding MacroStatus}"/>
                     </StackPanel>
-                    <DataGrid ItemsSource="{Binding MacroSteps}" AutoGenerateColumns="False" DockPanel.Dock="Bottom" Margin="10" IsReadOnly="False">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Frames" Binding="{Binding Frames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="60"/>
-                            <DataGridTextColumn Header="Buttons (comma)" Binding="{Binding ButtonsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
-                            <DataGridTextColumn Header="LX" Binding="{Binding LeftX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
-                            <DataGridTextColumn Header="LY" Binding="{Binding LeftY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
-                            <DataGridTextColumn Header="RX" Binding="{Binding RightX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
-                            <DataGridTextColumn Header="RY" Binding="{Binding RightY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
-                            <DataGridTextColumn Header="Roll" Binding="{Binding Roll, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
-                            <DataGridTextColumn Header="Pitch" Binding="{Binding Pitch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
-                            <DataGridTextColumn Header="Yaw" Binding="{Binding Yaw, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                    <Grid DockPanel.Dock="Bottom" Margin="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="360"/>
+                        </Grid.ColumnDefinitions>
+                        <DataGrid ItemsSource="{Binding MacroSteps}" SelectedItem="{Binding SelectedMacroStep, Mode=TwoWay}" AutoGenerateColumns="False" IsReadOnly="False" Margin="0 0 10 0">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Frames" Binding="{Binding Frames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="60"/>
+                                <DataGridTextColumn Header="Buttons (comma)" Binding="{Binding ButtonsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
+                                <DataGridTextColumn Header="LX" Binding="{Binding LeftX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                                <DataGridTextColumn Header="LY" Binding="{Binding LeftY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                                <DataGridTextColumn Header="RX" Binding="{Binding RightX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                                <DataGridTextColumn Header="RY" Binding="{Binding RightY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
+                                <DataGridTextColumn Header="Roll" Binding="{Binding Roll, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
+                                <DataGridTextColumn Header="Pitch" Binding="{Binding Pitch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
+                                <DataGridTextColumn Header="Yaw" Binding="{Binding Yaw, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="ジャイロ傾きグローブ" FontWeight="Bold" Margin="0 0 0 6"/>
+                            <Border BorderBrush="SteelBlue" BorderThickness="1" CornerRadius="6" Background="#101B2A" Height="320">
+                                <controls:GyroGlobeControl ItemsSource="{Binding MacroSteps}" SelectedFrame="{Binding SelectedMacroStep}"/>
+                            </Border>
+                            <TextBlock Margin="0 8 0 0" TextWrapping="Wrap" Text="オレンジの軌跡は各ステップのジャイロ傾き推移、赤い点は選択中フレームです。1F分解後は各行が1フレームになり、細かく編集できます。"/>
+                            <GroupBox Header="選択フレームのジャイロ微調整" Margin="0 10 0 0">
+                                <StackPanel Margin="8">
+                                    <TextBlock Text="Roll"/>
+                                    <Slider Minimum="-32768" Maximum="32767" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding SelectedMacroStep.Roll, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Text="Pitch" Margin="0 6 0 0"/>
+                                    <Slider Minimum="-32768" Maximum="32767" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding SelectedMacroStep.Pitch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBlock Text="Yaw" Margin="0 6 0 0"/>
+                                    <Slider Minimum="-32768" Maximum="32767" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding SelectedMacroStep.Yaw, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                            </GroupBox>
+                        </StackPanel>
+                    </Grid>
                 </DockPanel>
             </TabItem>
             <TabItem Header="Switch送信">

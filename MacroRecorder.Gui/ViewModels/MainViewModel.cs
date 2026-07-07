@@ -23,6 +23,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string _sendPortName = "COM3";
     private int _sendBaudRate = 9600;
     private string _sendStatus = "Switch未接続";
+    private MacroStepViewModel? _selectedMacroStep;
     private CaptureSession? _currentCapture;
 
     public MainViewModel()
@@ -31,12 +32,21 @@ public sealed class MainViewModel : INotifyPropertyChanged
         LoadCaptureCommand = new RelayCommand(LoadCapture);
         BuildMacroFromCaptureCommand = new RelayCommand(BuildMacroFromCapture, () => _currentCapture is not null);
         AddStepCommand = new RelayCommand(AddStep);
+        NormalizeMacroFramesCommand = new RelayCommand(NormalizeMacroFrames, () => MacroSteps.Count > 0);
         LoadMacroCommand = new RelayCommand(LoadMacro);
         SaveMacroCommand = new RelayCommand(SaveMacro);
         SendMacroCommand = new AsyncRelayCommand(SendMacroAsync, () => MacroSteps.Count > 0);
         SendCaptureCommand = new AsyncRelayCommand(SendCaptureAsync, () => _currentCapture is not null);
 
-        MacroSteps.CollectionChanged += (_, _) => SendMacroCommand.RaiseCanExecuteChanged();
+        MacroSteps.CollectionChanged += (_, _) =>
+        {
+            SendMacroCommand.RaiseCanExecuteChanged();
+            NormalizeMacroFramesCommand.RaiseCanExecuteChanged();
+            if (SelectedMacroStep is null || !MacroSteps.Contains(SelectedMacroStep))
+            {
+                SelectedMacroStep = MacroSteps.FirstOrDefault();
+            }
+        };
     }
 
     public ObservableCollection<FrameViewModel> CapturedFrames { get; } = new();
@@ -108,10 +118,17 @@ public sealed class MainViewModel : INotifyPropertyChanged
         set => SetField(ref _sendStatus, value);
     }
 
+    public MacroStepViewModel? SelectedMacroStep
+    {
+        get => _selectedMacroStep;
+        set => SetField(ref _selectedMacroStep, value);
+    }
+
     public AsyncRelayCommand CaptureCommand { get; }
     public RelayCommand LoadCaptureCommand { get; }
     public RelayCommand BuildMacroFromCaptureCommand { get; }
     public RelayCommand AddStepCommand { get; }
+    public RelayCommand NormalizeMacroFramesCommand { get; }
     public RelayCommand LoadMacroCommand { get; }
     public RelayCommand SaveMacroCommand { get; }
     public AsyncRelayCommand SendMacroCommand { get; }
@@ -211,8 +228,41 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private void AddStep()
     {
-        MacroSteps.Add(new MacroStepViewModel());
+        var step = new MacroStepViewModel();
+        MacroSteps.Add(step);
+        SelectedMacroStep = step;
         SendMacroCommand.RaiseCanExecuteChanged();
+    }
+
+
+    private void NormalizeMacroFrames()
+    {
+        if (MacroSteps.Count == 0)
+        {
+            MacroStatus = "分解するステップがありません";
+            return;
+        }
+
+        var expanded = MacroSteps
+            .SelectMany(step => Enumerable.Range(0, Math.Max(1, step.Frames)).Select(_ => CloneAsSingleFrame(step)))
+            .ToList();
+
+        MacroSteps.Clear();
+        foreach (var step in expanded)
+        {
+            MacroSteps.Add(step);
+        }
+
+        SelectedMacroStep = MacroSteps.FirstOrDefault();
+        MacroStatus = $"{MacroSteps.Count}件の1Fステップに分解しました";
+    }
+
+
+    private static MacroStepViewModel CloneAsSingleFrame(MacroStepViewModel source)
+    {
+        var clone = MacroStepViewModel.FromStep(source.ToMacroStep());
+        clone.Frames = 1;
+        return clone;
     }
 
     private void LoadMacro()
