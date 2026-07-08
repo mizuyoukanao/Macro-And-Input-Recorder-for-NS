@@ -19,7 +19,7 @@ Nintendo Switch ProコントローラーのUSBスニファ経由バイト列を�
 ### GUI (WPF)
 1. Visual Studioで`MacroAndInputRecorder.sln`を開き、`MacroRecorder.Gui`プロジェクトをスタートアップに設定して実行します。
 2. "キャプチャ"タブでUSBスニファのポート/ボーレート/秒数/ポーリング間隔を設定し、「記録開始」を押すと`s`実行後に`b`を自動送信しながらバイト列を収集します。
-3. 取得したフレームを一覧で確認し、「キャプチャから生成」でマクロ化します。DataGrid上でFramesやボタン名、スティックXY、ジャイロRoll/Pitch/Yawを直接編集できます。
+3. 取得したフレームは一覧で確認でき、記録完了または`capture.bin`読込時にマクロ編集タブへそのまま反映されます。必要に応じて「キャプチャから生成」で再反映できます。DataGrid上でFramesやボタン名、スティックXY、ジャイロRoll/Pitch/Yawを直接編集できます。
 4. "Switch送信"タブでUARTポート/ボーレートを指定し、「マクロ送信」または「キャプチャ送信」でSwitchに入力します。先頭5バイト`0xAA`固定のUARTControllerNXフレームで送ります。
 
 ### ビルド(コンソール)
