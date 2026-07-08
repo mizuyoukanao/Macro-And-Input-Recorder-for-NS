@@ -23,6 +23,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string _sendPortName = "COM3";
     private int _sendBaudRate = 9600;
     private string _sendStatus = "Switch未接続";
+    private MotionEncoding _captureMotionEncoding = MotionEncoding.RawGyro;
+    private MotionEncoding _macroMotionEncoding = MotionEncoding.RawGyro;
     private MacroStepViewModel? _selectedMacroStep;
     private CaptureSession? _currentCapture;
 
@@ -51,6 +53,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public ObservableCollection<FrameViewModel> CapturedFrames { get; } = new();
     public ObservableCollection<MacroStepViewModel> MacroSteps { get; } = new();
+    public IReadOnlyList<MotionEncoding> MotionEncodingOptions { get; } = Enum.GetValues<MotionEncoding>();
 
     public string CapturePortName
     {
@@ -118,6 +121,18 @@ public sealed class MainViewModel : INotifyPropertyChanged
         set => SetField(ref _sendStatus, value);
     }
 
+    public MotionEncoding CaptureMotionEncoding
+    {
+        get => _captureMotionEncoding;
+        set => SetField(ref _captureMotionEncoding, value);
+    }
+
+    public MotionEncoding MacroMotionEncoding
+    {
+        get => _macroMotionEncoding;
+        set => SetField(ref _macroMotionEncoding, value);
+    }
+
     public MacroStepViewModel? SelectedMacroStep
     {
         get => _selectedMacroStep;
@@ -149,7 +164,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 BaudRate = CaptureBaudRate,
                 Seconds = CaptureSeconds,
                 PollIntervalMs = CapturePollIntervalMs,
-                OutputPath = "capture.bin"
+                OutputPath = "capture.bin",
+                MotionEncoding = CaptureMotionEncoding
             };
 
             var recorder = new UsbSnifferRecorder(options);
@@ -329,7 +345,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             var macro = BuildMacroDefinition();
             var frames = new MacroGenerator().BuildFrames(macro);
             await SendFramesAsync(new CaptureSession(frames));
-            SendStatus = $"マクロ '{macro.Name}' を送信しました";
+            SendStatus = $"マクロ '{macro.Name}' を送信しました ({MacroMotionEncoding})";
         }
         catch (Exception ex)
         {
@@ -348,7 +364,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         try
         {
             await SendFramesAsync(_currentCapture);
-            SendStatus = "キャプチャを送信しました";
+            SendStatus = $"キャプチャを送信しました ({MacroMotionEncoding})";
         }
         catch (Exception ex)
         {
@@ -359,7 +375,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private async Task SendFramesAsync(CaptureSession session)
     {
         using var sender = new SwitchSerialSender(SendPortName, SendBaudRate);
-        var playback = new PacketPlayback(sender, session);
+        var playback = new PacketPlayback(sender, session, MacroMotionEncoding);
         await playback.PlayAsync(false);
     }
 

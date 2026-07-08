@@ -14,17 +14,32 @@ public readonly record struct ProControllerPacket(byte[] Raw)
 
     public ControllerFrame ToFrame(TimeSpan timestamp, MotionEncoding motionEncoding = MotionEncoding.RawGyro)
     {
-        var requiredLength = motionEncoding == MotionEncoding.Quaternion ? 21 : 19;
-        if (Raw.Length < requiredLength)
+        var layout = DetectLayout(motionEncoding);
+        if (Raw.Length < layout.RequiredLength)
         {
             throw new InvalidOperationException("Packet too short to decode");
         }
 
-        var buttons = (ButtonState)(Raw[3] | (Raw[4] << 8) | (Raw[5] << 16));
-        var left = DecodeStick(Raw.AsSpan(6));
-        var right = DecodeStick(Raw.AsSpan(9));
-        var gyro = DecodeMotion(Raw.AsSpan(13), motionEncoding);
+        var buttons = (ButtonState)(Raw[layout.ButtonOffset] | (Raw[layout.ButtonOffset + 1] << 8) | (Raw[layout.ButtonOffset + 2] << 16));
+        var left = DecodeStick(Raw.AsSpan(layout.LeftStickOffset));
+        var right = DecodeStick(Raw.AsSpan(layout.RightStickOffset));
+        var gyro = DecodeMotion(Raw.AsSpan(layout.MotionOffset), motionEncoding);
         return new ControllerFrame(timestamp, buttons, left, right, gyro);
+    }
+
+    private PacketLayout DetectLayout(MotionEncoding motionEncoding)
+    {
+        // Standard Switch input reports keep buttons at bytes 3-5, sticks at 6/9,
+        // accelerometer at 13-18 and gyroscope at 19-24. The compact reports this
+        // app serializes for playback omit timer/battery and acceleration fields.
+        if (Raw.Length >= 25)
+        {
+            return new PacketLayout(25, 3, 6, 9, motionEncoding == MotionEncoding.Quaternion ? 13 : 19);
+        }
+
+        return motionEncoding == MotionEncoding.Quaternion
+            ? new PacketLayout(20, 1, 4, 8, 12)
+            : new PacketLayout(18, 1, 4, 8, 12);
     }
 
     private static AnalogStickState DecodeStick(ReadOnlySpan<byte> buffer)
@@ -48,4 +63,11 @@ public readonly record struct ProControllerPacket(byte[] Raw)
         var yaw = (short)((buffer[5] << 8) | buffer[4]);
         return new GyroState(roll, pitch, yaw);
     }
+
+    private readonly record struct PacketLayout(
+        int RequiredLength,
+        int ButtonOffset,
+        int LeftStickOffset,
+        int RightStickOffset,
+        int MotionOffset);
 }
