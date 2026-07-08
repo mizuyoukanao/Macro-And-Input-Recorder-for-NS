@@ -46,6 +46,32 @@ public sealed class CaptureMacroBuilder
         return macro;
     }
 
+    public MacroDefinition BuildPreservingFrames(string name, CaptureSession session)
+    {
+        var macro = new MacroDefinition
+        {
+            Name = name,
+            FrameIntervalMs = CalculateInterval(session)
+        };
+
+        if (session.Frames.Count == 0)
+        {
+            return macro;
+        }
+
+        var orderedFrames = session.Frames.OrderBy(f => f.Timestamp).ToList();
+        for (var i = 0; i < orderedFrames.Count; i++)
+        {
+            var step = CreateStep(orderedFrames[i]);
+            step.Frames = i + 1 < orderedFrames.Count
+                ? CalculateFramesForInterval(orderedFrames[i].Timestamp, orderedFrames[i + 1].Timestamp, macro.FrameIntervalMs)
+                : 1;
+            macro.Steps.Add(step);
+        }
+
+        return macro;
+    }
+
     private static bool AreSameState(ControllerFrame first, ControllerFrame second)
     {
         return first.Buttons == second.Buttons

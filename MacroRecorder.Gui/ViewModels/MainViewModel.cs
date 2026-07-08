@@ -156,6 +156,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             _currentCapture = await recorder.RecordAsync();
             CaptureStatus = $"{_currentCapture.Frames.Count}フレーム取得";
             UpdateCapturedFrames();
+            ReflectCaptureInMacroEditor();
             BuildMacroFromCaptureCommand.RaiseCanExecuteChanged();
             SendCaptureCommand.RaiseCanExecuteChanged();
         }
@@ -185,6 +186,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             _currentCapture = BinaryCaptureWriter.Read(dialog.FileName);
             CaptureStatus = $"{dialog.FileName} を読み込みました ({_currentCapture.Frames.Count}フレーム)";
             UpdateCapturedFrames();
+            ReflectCaptureInMacroEditor();
             BuildMacroFromCaptureCommand.RaiseCanExecuteChanged();
             SendCaptureCommand.RaiseCanExecuteChanged();
         }
@@ -206,6 +208,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private void BuildMacroFromCapture()
     {
+        ReflectCaptureInMacroEditor("キャプチャからマクロを生成しました");
+    }
+
+    private void ReflectCaptureInMacroEditor(string? statusMessage = null)
+    {
         if (_currentCapture is null)
         {
             MacroStatus = "キャプチャがありません";
@@ -213,7 +220,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
 
         var builder = new CaptureMacroBuilder();
-        var macro = builder.Build("capture", _currentCapture);
+        var macro = builder.BuildPreservingFrames("capture", _currentCapture);
         MacroName = macro.Name;
         MacroFrameInterval = macro.FrameIntervalMs;
         MacroSteps.Clear();
@@ -222,7 +229,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
             MacroSteps.Add(MacroStepViewModel.FromStep(step));
         }
 
-        MacroStatus = "キャプチャからマクロを生成しました";
+        SelectedMacroStep = MacroSteps.FirstOrDefault();
+        MacroStatus = statusMessage ?? $"キャプチャ内容をマクロ編集に反映しました ({MacroSteps.Count}ステップ)";
         SendMacroCommand.RaiseCanExecuteChanged();
     }
 
