@@ -74,29 +74,32 @@ public sealed class GyroGlobeControl : Control
             drawingContext.DrawLine(gridPen, new Point(center.X + offset, center.Y - radius), new Point(center.X + offset, center.Y + radius));
         }
 
-        var points = BuildPoints(center, radius).ToList();
-        if (points.Count > 1)
+        var trajectory = BuildTrajectory(center, radius).ToList();
+        if (trajectory.Count > 1)
         {
             var geometry = new StreamGeometry();
             using (var context = geometry.Open())
             {
-                context.BeginFigure(points[0], false, false);
-                context.PolyLineTo(points.Skip(1).ToList(), true, false);
+                context.BeginFigure(trajectory[0].Point, false, false);
+                context.PolyLineTo(trajectory.Skip(1).Select(p => p.Point).ToList(), true, false);
             }
             geometry.Freeze();
             drawingContext.DrawGeometry(null, new Pen(Brushes.Orange, 3), geometry);
         }
 
-        foreach (var point in points)
+        foreach (var point in trajectory.Skip(1).Select(p => p.Point))
         {
             drawingContext.DrawEllipse(Brushes.Gold, null, point, 2.8, 2.8);
         }
 
         if (SelectedFrame is not null)
         {
-            var selectedPoint = Project(SelectedFrame.Roll, SelectedFrame.Pitch, SelectedFrame.Yaw, center, radius);
-            drawingContext.DrawEllipse(Brushes.White, new Pen(Brushes.Red, 2), selectedPoint, 7, 7);
-            DrawVector(drawingContext, center, selectedPoint);
+            var selectedPoint = trajectory.LastOrDefault(p => ReferenceEquals(p.Step, SelectedFrame))?.Point;
+            if (selectedPoint is Point point)
+            {
+                drawingContext.DrawEllipse(Brushes.White, new Pen(Brushes.Red, 2), point, 7, 7);
+                DrawVector(drawingContext, center, point);
+            }
         }
 
         drawingContext.DrawText(
@@ -104,29 +107,48 @@ public sealed class GyroGlobeControl : Control
             new Point(8, 8));
     }
 
-    private IEnumerable<Point> BuildPoints(Point center, double radius)
+    private IEnumerable<TrajectoryPoint> BuildTrajectory(Point center, double radius)
     {
-        if (ItemsSource is null) yield break;
-        foreach (var item in ItemsSource)
+        var rawPoints = BuildRawTrajectory().ToList();
+        if (rawPoints.Count == 0)
         {
-            if (item is MacroStepViewModel step)
+            yield break;
+        }
+
+        var maxDistance = rawPoints.Max(p => Math.Max(Math.Abs(p.X), Math.Abs(p.Y)));
+        var scale = maxDistance > 0 ? radius * 0.86 / maxDistance : 1;
+        foreach (var rawPoint in rawPoints)
+        {
+            yield return new TrajectoryPoint(new Point(center.X + rawPoint.X * scale, center.Y - rawPoint.Y * scale), rawPoint.Step);
+        }
+    }
+
+    private IEnumerable<RawTrajectoryPoint> BuildRawTrajectory()
+    {
+        yield return new RawTrajectoryPoint(0, 0, null);
+        if (ItemsSource is null) yield break;
+
+        const double scale = 16.384;
+        double x = 0;
+        double y = 0;
+        foreach (var step in ItemsSource.OfType<MacroStepViewModel>())
+        {
+            var frameCount = Math.Max(1, step.Frames);
+            for (var frame = 0; frame < frameCount; frame++)
             {
-                yield return Project(step.Roll, step.Pitch, step.Yaw, center, radius);
+                var rollDegrees = step.Roll / scale;
+                var pitchDegrees = step.Pitch / scale;
+                var yawDegrees = step.Yaw / scale;
+                x += yawDegrees + rollDegrees * 0.35;
+                y += pitchDegrees;
+                yield return new RawTrajectoryPoint(x, y, step);
             }
         }
     }
 
-    private static Point Project(short roll, short pitch, short yaw, Point center, double radius)
-    {
-        const double scale = 16.384;
-        var rollRad = Math.Clamp(roll / scale, -180, 180) * Math.PI / 180;
-        var pitchRad = Math.Clamp(pitch / scale, -90, 90) * Math.PI / 180;
-        var yawRad = Math.Clamp(yaw / scale, -180, 180) * Math.PI / 180;
+    private sealed record TrajectoryPoint(Point Point, MacroStepViewModel? Step);
 
-        var x = Math.Cos(pitchRad) * Math.Sin(yawRad + rollRad * 0.35);
-        var y = Math.Sin(pitchRad);
-        return new Point(center.X + x * radius * 0.86, center.Y - y * radius * 0.86);
-    }
+    private sealed record RawTrajectoryPoint(double X, double Y, MacroStepViewModel? Step);
 
     private static void DrawVector(DrawingContext drawingContext, Point center, Point selectedPoint)
     {
