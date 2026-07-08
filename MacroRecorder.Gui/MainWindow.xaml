@@ -26,6 +26,10 @@
                                 <TextBlock Text="ポーリング(ms)"/>
                                 <TextBox Width="80" Text="{Binding CapturePollIntervalMs, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
+                            <StackPanel Margin="0 0 12 0">
+                                <TextBlock Text="ジャイロ解釈"/>
+                                <ComboBox Width="140" ItemsSource="{Binding MotionEncodingOptions}" SelectedItem="{Binding CaptureMotionEncoding, Mode=TwoWay}"/>
+                            </StackPanel>
                             <Button Content="記録開始" Width="120" Margin="0 0 8 0" Command="{Binding CaptureCommand}"/>
                             <Button Content="capture.bin読込" Width="140" Command="{Binding LoadCaptureCommand}"/>
                         </WrapPanel>
@@ -55,6 +59,10 @@
                                 <TextBlock Text="フレーム間隔(ms)"/>
                                 <TextBox Width="120" Text="{Binding MacroFrameInterval, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
+                            <StackPanel Margin="0 12 12 0">
+                                <TextBlock Text="送信時ジャイロ解釈"/>
+                                <ComboBox Width="150" ItemsSource="{Binding MotionEncodingOptions}" SelectedItem="{Binding MacroMotionEncoding, Mode=TwoWay}"/>
+                            </StackPanel>
                             <Button Content="ステップ追加" Width="120" Margin="0 0 8 0" Command="{Binding AddStepCommand}"/>
                             <Button Content="1F分解" Width="100" Margin="0 0 8 0" Command="{Binding NormalizeMacroFramesCommand}"/>
                             <Button Content="マクロ読込" Width="120" Margin="0 0 8 0" Command="{Binding LoadMacroCommand}"/>
@@ -62,6 +70,7 @@
                             <Button Content="キャプチャから生成" Width="150" Command="{Binding BuildMacroFromCaptureCommand}"/>
                         </WrapPanel>
                         <TextBlock Text="{Binding MacroStatus}"/>
+                        <TextBlock Margin="0 4 0 0" TextWrapping="Wrap" Foreground="DimGray" Text="RawGyro: Switch 0x30系入力レポートの加速度3軸後にあるInt16LEジャイロ3軸をそのまま扱います。Quaternion: joycon-quat互換のx/y/z/w Int16LE正規化クォータニオンとして角度へ変換/送信します。"/>
                     </StackPanel>
                     <Grid DockPanel.Dock="Bottom" Margin="10">
                         <Grid.ColumnDefinitions>
